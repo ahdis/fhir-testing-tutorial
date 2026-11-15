@@ -1,0 +1,9 @@
+# The system under test of step 5: a plain HAPI FHIR server (R4), reachable from the ITB containers.
+name: fhir-testing-tutorial-sut
+services:
+  hapi:
+    image: hapiproject/hapi:v8.6.0-1
+    ports:
+      - "8090:8080"
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx1g

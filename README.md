@@ -3,13 +3,13 @@
 Material for the tutorial *FHIR Validation ecosystem and testing approaches* (HL7 Europe Working Group Meeting,
 Tuesday 17 November 2026, 09:00–10:30). One document, the European Patient Summary (EPS), goes through every step.
 
-Status: work in progress. Steps 1 to 4 are tested.
+Status: work in progress. Steps 1 to 5 are tested as described in each section.
 
 ## Prerequisites
 
 - Java 21
 - Docker with Compose, and 6 GB of memory for the Docker VM
-- `curl`, `jq` and Python 3
+- `curl`, `jq` and Python 3; Node.js 22 or newer for step 5
 
 ## The document
 
@@ -91,5 +91,37 @@ curl -H 'Authorization: Bearer tutorial-token' "$BASE/Binary/eps-minimal"
   the token request of SMART Backend Services is left out to keep the exercise short.
 - ITB waits five minutes per step. Run one session at a time: a request goes to the session that is waiting.
 - The document ITB hands out is `examples/eps-minimal.json`, so the retrieved Bundle can go straight back into step 1 or 2.
+
+## 5. The EU Health Data API tests: your system is the server
+
+The [EU Health Data API tests](https://euridice-org.github.io/eu-health-data-api-test/en/) by Jens Villadsen are
+67 ITB test cases for the six actors of the EU Health Data API. They are a demonstration, not an approved test
+specification. Here the system under test is a server: a plain HAPI FHIR server with the tests' 27 fixture resources.
+
+```bash
+(cd 03-itb && docker compose --env-file .env stop)   # free memory and ports: this step brings its own ITB
+04-eu-health-data-api/setup.sh                       # clones the tests, starts HAPI, loads the fixtures, starts ITB
+04-eu-health-data-api/run.sh                         # SUCCESS dap-001, FAILURE dap-002
+```
+
+`setup.sh` prints the address (<http://127.0.0.1:9001>), the login, and the ids the test cases ask for.
+In the browser, choose the system *Implementation under test*, the actor *DocumentAccessProvider*, and run a case.
+
+- `dap-001` passes: HAPI declares `DocumentReference` and `Binary`. `dap-002` fails: HAPI does not declare
+  SMART on FHIR security. That is the point of the exercise: a general FHIR server is not yet a Document Access
+  Provider of the EU Health Data API.
+- The search cases ask for a patient id and an access token. HAPI accepts any token, and the authorization cases
+  report that.
+- Needs Node.js 22 or newer, and about 6 GB of memory for Docker. The first start takes several minutes.
+- Until [eu-health-data-api-test#1](https://github.com/euridice-org/eu-health-data-api-test/pull/1) is merged,
+  `setup.sh` clones the branch with the fix for the validator download.
+
+Tested on 2026-11-15: `setup.sh` from a fresh clone, and the cases `dap-001`, `dap-002` and `dap-014` from the command
+line. The cases that need operator input were not run.
+
+## Licence
+
+Apache License 2.0, see [LICENSE](LICENSE). The example documents are derived from an example of the HL7 Europe
+European Patient Summary implementation guide.
 
 Tested with validator 7.0.6, matchbox v4.1.21 and ITB 1.30.2 on 2026-11-15.
