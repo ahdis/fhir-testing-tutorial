@@ -6,6 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 MATCHBOX_URL=${MATCHBOX_URL:-http://matchbox:8080/matchboxv3/fhir}
+MATCHBOX_ITB=${MATCHBOX_URL%/fhir}/itb/fhir     # matchbox as ITB validation service, since matchbox 5.0.0
 ITB=http://127.0.0.1:9000
 
 [ -f .env ] || (umask 077; echo "ITB_AUTOMATION_API_MASTER_KEY=$(openssl rand -hex 32)" > .env)
@@ -36,12 +37,12 @@ ORG=$(ensure organisation /organisation "$COMMUNITY" '{"shortName":"My organisat
 SYSTEM=$(ensure system /system "$COMMUNITY" "{\"shortName\":\"My system\",\"fullName\":\"My system under test\",\"organisation\":\"$ORG\"}")
 
 rm -rf build && mkdir build
-MATCHBOX_URL="$MATCHBOX_URL" python3 - <<'PY'
+MATCHBOX_ITB="$MATCHBOX_ITB" python3 - <<'PY'
 # fill in the validator address and the document the test bed hands out
 import glob, html, json, os
 eps = html.escape(json.dumps(json.load(open("../examples/eps-minimal.json")), ensure_ascii=False), quote=False)
 for f in glob.glob("suite/*.xml"):
-    s = open(f).read().replace("@MATCHBOX_URL@", os.environ["MATCHBOX_URL"]).replace("@EPS_MINIMAL@", eps)
+    s = open(f).read().replace("@MATCHBOX_ITB@", os.environ["MATCHBOX_ITB"]).replace("@EPS_MINIMAL@", eps)
     open("build/" + os.path.basename(f), "w").write(s)
 PY
 (cd build && zip -q suite.zip *.xml)
@@ -61,5 +62,5 @@ jq --slurpfile d build/deploy.json '.testCases=$d[0].identifiers.testCases' .sta
 
 echo
 echo "ITB is ready:      $ITB   (administrator admin@itb; its one-time password is in: docker compose logs gitb-ui)"
-echo "validator:         $MATCHBOX_URL"
+echo "validator:         $MATCHBOX_ITB"
 echo "your system calls: http://127.0.0.1:8081/itbsrv/api/http/$SYSTEM/...   (while a test session is waiting)"

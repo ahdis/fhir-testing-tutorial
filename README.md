@@ -43,27 +43,29 @@ almost all of it loading the packages.
 matchbox loads the EPS package on its first start (about two minutes). After that a validation takes less than a second
 (the first one a few seconds). Open <http://127.0.0.1:8080/matchboxv3> for the web GUI.
 
-## 3. ITB with matchbox as its validator
+## 3. ITB with matchbox as its validation service
 
 The EU Interoperability Test Bed plays the receiver of a patient summary. The system under test sends the document to
-the test bed, the test bed has matchbox validate it, and the test case passes if matchbox reports no error.
+the test bed, and the test bed has matchbox validate it. matchbox is plugged in as ITB's validation service
+(GITB REST API, in matchbox since 5.0.0-rc4), so the findings of matchbox become the report of the test step.
 
 ```bash
 03-itb/setup.sh                                 # starts ITB next to matchbox and loads the test suite
-03-itb/run.sh examples/eps-minimal.json         # ITB result: SUCCESS
-03-itb/run.sh examples/eps-broken.json          # ITB result: FAILURE
+03-itb/run.sh examples/eps-minimal.json         # matchbox report in ITB: 0 errors   -> ITB result: SUCCESS
+03-itb/run.sh examples/eps-broken.json          # matchbox report in ITB: 12 errors  -> ITB result: FAILURE
 ```
 
-`run.sh` starts a test session through ITB's REST API and then acts as the system under test with one `curl`.
-To watch it in the browser, open <http://127.0.0.1:9000> and log in as `admin@itb`; the one-time password is printed by
+`run.sh` starts a test session through ITB's REST API, acts as the system under test with one `curl`, and prints the
+findings from ITB's report. To watch it in the browser, open <http://127.0.0.1:9000> and log in as `admin@itb`; the
+one-time password is printed by
 `(cd 03-itb && docker compose --env-file .env logs gitb-ui | grep -A2 'one-time password')`.
 
 - The test case is `03-itb/suite/eps-001-valid-patient-summary.xml` (GITB TDL): a `receive` step that waits for the
-  document, a `send` step to matchbox's `$validate`, and two checks.
-- Another matchbox: `MATCHBOX_URL=https://<host>/matchboxv3/fhir 03-itb/setup.sh`. The address must be reachable from
-  the ITB container.
-- When the document is valid, the sender gets matchbox's OperationOutcome back. When it is not, the sender gets
-  HTTP 500 and the OperationOutcome is in the session's validation step.
+  document, and a `verify` step whose handler is matchbox:
+  `<verify handler="http://matchbox:8080/matchboxv3/itb/fhir" handlerApiType="REST">` with the inputs
+  `contentToValidate` and `profiles`.
+- Another matchbox (5.0.0-rc4 or later): `MATCHBOX_URL=https://<host>/matchboxv3/fhir 03-itb/setup.sh`. The address
+  must be reachable from the ITB container.
 - The first start pulls about 2 GB of images and takes a few minutes.
 
 ## 4. ITB as a simulator: your system is the client
@@ -124,4 +126,4 @@ line. The cases that need operator input were not run.
 Apache License 2.0, see [LICENSE](LICENSE). The example documents are derived from an example of the HL7 Europe
 European Patient Summary implementation guide.
 
-Tested with validator 7.0.6, matchbox v4.1.21 and ITB 1.30.2 on 2026-11-15.
+Tested with validator 7.0.6, matchbox v5.0.0-rc4 (a release candidate) and ITB 1.30.2 on 2026-11-15.

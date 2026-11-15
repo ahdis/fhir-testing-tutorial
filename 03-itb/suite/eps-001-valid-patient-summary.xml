@@ -3,7 +3,7 @@
   <metadata>
     <gitb:name>eps-001 The system under test sends a valid European Patient Summary</gitb:name>
     <gitb:version>1.0</gitb:version>
-    <gitb:description>The test bed waits for a POST of an EPS Bundle, sends it to matchbox ($validate against bundle-eu-eps) and passes if matchbox reports no error.</gitb:description>
+    <gitb:description>The test bed waits for a POST of an EPS Bundle and has matchbox validate it against bundle-eu-eps. matchbox is the test bed's validation service (GITB REST API); its report becomes the report of the step.</gitb:description>
   </metadata>
   <actors userName="Test operator">
     <gitb:actor id="DocumentSource" role="SUT"/>
@@ -12,41 +12,24 @@
   </actors>
   <variables>
     <var name="received" type="map"/>
-    <var name="validation" type="map"/>
-    <var name="validateHeaders" type="map"/>
     <var name="replyHeaders" type="map"/>
-    <var name="outcome" type="string"/>
   </variables>
-  <steps stopOnError="true">
-    <assign to="validateHeaders{Content-Type}">"application/fhir+json"</assign>
-    <assign to="validateHeaders{Accept}">"application/fhir+json"</assign>
+  <steps stopOnError="false">
     <assign to="replyHeaders{Content-Type}">"application/fhir+json"</assign>
     <interact id="inform" desc="POST the European Patient Summary to the address of the next step" inputTitle="Instruction for the document source" with="DocumentSource">
       <instruct desc="Instruction" name="message" forceDisplay="true">"POST the European Patient Summary (a FHIR Bundle, application/fhir+json) to the test bed, at the address shown for the next step, path /Bundle."</instruct>
     </interact>
     <receive id="received" desc="Receive the patient summary" handler="HttpMessagingV2" from="DocumentSource" to="DocumentReceiver" timeout="300000" timeoutIsError="true">
       <result>
-        <steps stopOnError="false">
-          <send id="validation" desc="matchbox validates against bundle-eu-eps" handler="HttpMessagingV2" from="DocumentReceiver" to="Validator">
-            <input name="uri">"@MATCHBOX_URL@/%24validate?profile=http://hl7.eu/fhir/eps/StructureDefinition/bundle-eu-eps"</input>
-            <input name="method">"POST"</input>
-            <input name="headers">$validateHeaders</input>
-            <input name="body">$received{request}{body}</input>
-          </send>
-          <assign to="outcome">$validation{response}{body}</assign>
-          <verify handler="NumberValidator" desc="matchbox answered 200">
-            <input name="actualnumber">$validation{response}{status}</input>
-            <input name="expectednumber">"200"</input>
-          </verify>
-          <verify handler="ExpressionValidator" desc="matchbox reports no error for the patient summary">
-            <input name="expression">not(matches($outcome, '"severity"\s*:\s*"(error|fatal)"'))</input>
-          </verify>
-        </steps>
         <output name="status">"200"</output>
         <output name="headers">$replyHeaders</output>
-        <output name="body">$outcome</output>
+        <output name="body">'{ "resourceType": "OperationOutcome", "issue": [ { "severity": "information", "code": "informational", "diagnostics": "Received. The test bed now has matchbox validate the document; the report is in the test session." } ] }'</output>
       </result>
     </receive>
+    <verify id="validation" desc="matchbox validates the document against the EPS Bundle profile" handler="@MATCHBOX_ITB@" handlerApiType="REST">
+      <input name="contentToValidate">$received{request}{body}</input>
+      <input name="profiles">"http://hl7.eu/fhir/eps/StructureDefinition/bundle-eu-eps"</input>
+    </verify>
     <verify handler="StringValidator" desc="The request is a POST">
       <input name="actualstring">$received{request}{method}</input>
       <input name="expectedstring">"POST"</input>
@@ -57,7 +40,7 @@
       <default>"The patient summary is valid against the EPS Bundle profile."</default>
     </success>
     <failure>
-      <default>"The patient summary is not valid. Open the validation step to read matchbox's OperationOutcome."</default>
+      <default>"The patient summary is not valid. Open the validation step to read the findings of matchbox."</default>
     </failure>
   </output>
 </testcase>

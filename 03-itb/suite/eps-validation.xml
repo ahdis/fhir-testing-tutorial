@@ -24,7 +24,7 @@
     </gitb:actor>
     <gitb:actor id="Validator">
       <gitb:name>Validator</gitb:name>
-      <gitb:desc>matchbox, at @MATCHBOX_URL@</gitb:desc>
+      <gitb:desc>matchbox as the validation service of the test bed, at @MATCHBOX_ITB@</gitb:desc>
     </gitb:actor>
   </actors>
   <testcase id="eps-001-valid-patient-summary"/>
