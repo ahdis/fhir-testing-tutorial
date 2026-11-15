@@ -22,7 +22,7 @@ Type "clear"
 Enter
 Type "# the same document with five mistakes"
 Enter
-Type "01-validator-cli/validate.sh examples/eps-broken.json 2>&1 | grep -E 'FAILURE|Error|Warning' | cut -c1-170"
+Type "01-validator-cli/validate.sh examples/eps-broken.json 2>&1 | grep -E 'FAILURE|Error|Warning' | cut -c1-130"
 Enter
 Wait+Screen@120s /isn't reachable/
 Sleep 8s

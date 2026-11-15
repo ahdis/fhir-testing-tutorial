@@ -22,7 +22,7 @@ Type "02-matchbox/validate.sh examples/eps-minimal.json"
 Enter
 Wait+Screen@120s /information: \d/
 Sleep 3s
-Type "02-matchbox/validate.sh examples/eps-broken.json | cut -c1-170"
+Type "02-matchbox/validate.sh examples/eps-broken.json | cut -c1-130"
 Enter
 Wait+Screen@120s /error: \d+/
 Sleep 8s

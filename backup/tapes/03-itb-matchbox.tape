@@ -22,7 +22,9 @@ Type "03-itb/run.sh examples/eps-minimal.json"
 Enter
 Wait+Screen@120s /ITB result: SUCCESS/
 Sleep 3s
-Type "03-itb/run.sh examples/eps-broken.json"
+Type "clear"
+Enter
+Type "03-itb/run.sh examples/eps-broken.json | cut -c1-130"
 Enter
 Wait+Screen@120s /ITB result: FAILURE/
 Sleep 8s

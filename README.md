@@ -121,6 +121,10 @@ In the browser, choose the system *Implementation under test*, the actor *Docume
 Tested on 2026-11-15: `setup.sh` from a fresh clone, and the cases `dap-001`, `dap-002` and `dap-014` from the command
 line. The cases that need operator input were not run.
 
+## Backup
+
+Recordings and screenshots of every step are in [backup/](backup/README.md), in case a step does not run on your laptop.
+
 ## Licence
 
 Apache License 2.0, see [LICENSE](LICENSE). The example documents are derived from an example of the HL7 Europe
