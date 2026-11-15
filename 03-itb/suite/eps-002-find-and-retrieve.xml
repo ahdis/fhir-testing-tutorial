@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcase xmlns="http://www.gitb.com/tdl/v1/" xmlns:gitb="http://www.gitb.com/core/v1/" id="eps-002-find-and-retrieve">
+  <metadata>
+    <gitb:name>eps-002 The document consumer finds and retrieves a patient summary</gitb:name>
+    <gitb:version>1.0</gitb:version>
+    <gitb:description>The system under test is a client. The test bed plays the Document Access Provider of the EU Health Data API: it waits for Find Document References [ITI-67], answers with one patient summary, then waits for Retrieve Document [ITI-68] and answers with the European Patient Summary.</gitb:description>
+  </metadata>
+  <actors userName="Test operator">
+    <gitb:actor id="DocumentConsumer" role="SUT"/>
+    <gitb:actor id="DocumentAccessProvider" role="SIMULATED"/>
+  </actors>
+  <variables>
+    <var name="find" type="map"/>
+    <var name="retrieve" type="map"/>
+    <var name="replyHeaders" type="map"/>
+  </variables>
+  <steps stopOnError="true">
+    <assign to="replyHeaders{Content-Type}">"application/fhir+json"</assign>
+    <interact id="inform" desc="Find the patient summaries of patient eps-pat-1, then retrieve the document" inputTitle="Instruction for the document consumer" with="DocumentConsumer">
+      <instruct desc="Instruction" name="message" forceDisplay="true">"Use the address shown for the next step as the FHIR base URL. 1. Search DocumentReference for patient eps-pat-1, narrowed to patient summaries (category or type), with a bearer token. 2. Retrieve the document the answer points to."</instruct>
+    </interact>
+    <receive id="find" desc="Find Document References [ITI-67]" handler="HttpMessagingV2" from="DocumentConsumer" to="DocumentAccessProvider" timeout="300000" timeoutIsError="true">
+      <result>
+        <steps stopOnError="false">
+          <verify handler="StringValidator" desc="The request is a GET">
+            <input name="actualstring">$find{request}{method}</input>
+            <input name="expectedstring">"GET"</input>
+          </verify>
+          <verify handler="ExpressionValidator" desc="The search is on DocumentReference">
+            <input name="expression">contains($find{request}{uri}, "/DocumentReference")</input>
+          </verify>
+          <verify handler="ExpressionValidator" desc="The search names the patient">
+            <input name="expression">matches($find{request}{uri}, "patient=(Patient(/|%2F))?eps-pat-1([&amp;]|$)")</input>
+          </verify>
+          <verify handler="ExpressionValidator" desc="The search is narrowed by category or type">
+            <input name="expression">matches($find{request}{uri}, "[?&amp;](category|type)=")</input>
+          </verify>
+          <verify handler="ExpressionValidator" desc="The request carries a bearer token">
+            <input name="expression">contains($find{request}{headers}{Authorization}, "Bearer")</input>
+          </verify>
+        </steps>
+        <output name="status">"200"</output>
+        <output name="headers">$replyHeaders</output>
+        <output name="body">'{ "resourceType": "Bundle", "type": "searchset", "total": 1,
+  "entry": [ { "resource": { "resourceType": "DocumentReference", "id": "eps-doc-1", "status": "current",
+    "type": { "coding": [ { "system": "http://loinc.org", "code": "60591-5", "display": "Patient summary Document" } ] },
+    "category": [ { "coding": [ { "system": "http://hl7.eu/fhir/health-data-api/CodeSystem/eehrxf-document-priority-category-cs", "code": "Patient-Summaries" } ] } ],
+    "subject": { "reference": "Patient/eps-pat-1" },
+    "content": [ { "attachment": { "contentType": "application/fhir+json", "url": "Binary/eps-minimal" } } ] } } ] }'</output>
+      </result>
+    </receive>
+    <receive id="retrieve" desc="Retrieve Document [ITI-68]" handler="HttpMessagingV2" from="DocumentConsumer" to="DocumentAccessProvider" timeout="300000" timeoutIsError="true">
+      <result>
+        <steps stopOnError="false">
+          <verify handler="StringValidator" desc="The request is a GET">
+            <input name="actualstring">$retrieve{request}{method}</input>
+            <input name="expectedstring">"GET"</input>
+          </verify>
+          <verify handler="ExpressionValidator" desc="The request is for the document the search answer pointed to">
+            <input name="expression">contains($retrieve{request}{uri}, "/Binary/eps-minimal")</input>
+          </verify>
+          <verify handler="ExpressionValidator" desc="The request carries a bearer token">
+            <input name="expression">contains($retrieve{request}{headers}{Authorization}, "Bearer")</input>
+          </verify>
+        </steps>
+        <output name="status">"200"</output>
+        <output name="headers">$replyHeaders</output>
+        <output name="body">'@EPS_MINIMAL@'</output>
+      </result>
+    </receive>
+  </steps>
+  <output>
+    <success>
+      <default>"The document consumer found and retrieved the patient summary."</default>
+    </success>
+    <failure>
+      <default>"A request did not match. Open the failed step to see which check."</default>
+    </failure>
+  </output>
+</testcase>

@@ -36,19 +36,30 @@ ORG=$(ensure organisation /organisation "$COMMUNITY" '{"shortName":"My organisat
 SYSTEM=$(ensure system /system "$COMMUNITY" "{\"shortName\":\"My system\",\"fullName\":\"My system under test\",\"organisation\":\"$ORG\"}")
 
 rm -rf build && mkdir build
-for f in suite/*.xml; do sed "s|@MATCHBOX_URL@|$MATCHBOX_URL|g" "$f" > "build/$(basename "$f")"; done
+MATCHBOX_URL="$MATCHBOX_URL" python3 - <<'PY'
+# fill in the validator address and the document the test bed hands out
+import glob, html, json, os
+eps = html.escape(json.dumps(json.load(open("../examples/eps-minimal.json")), ensure_ascii=False), quote=False)
+for f in glob.glob("suite/*.xml"):
+    s = open(f).read().replace("@MATCHBOX_URL@", os.environ["MATCHBOX_URL"]).replace("@EPS_MINIMAL@", eps)
+    open("build/" + os.path.basename(f), "w").write(s)
+PY
 (cd build && zip -q suite.zip *.xml)
 DEPLOY=$(api POST /testsuite/deploy "$COMMUNITY" "$(jq -n --arg s "$SPEC" --arg z "$(base64 < build/suite.zip | tr -d '\n')" \
   '{specification:$s, testSuite:$z, ignoreWarnings:false, replaceTestHistory:false, updateSpecification:true, showIdentifiers:true}')")
 echo "$DEPLOY" > build/deploy.json
 [ "$(jq -r .completed build/deploy.json)" = true ] || { echo "deploy failed:"; jq . build/deploy.json; exit 1; }
 
-ACTOR=$(api GET "/specification/$SPEC/actors" "$COMMUNITY" | jq -r '.[] | select(.identifier=="DocumentSource") | .apiKey')
-api GET "/conformance/$SYSTEM" "$ORG" | jq -e --arg a "$ACTOR" 'any(.[]; .actor==$a)' >/dev/null ||
-  api PUT "/conformance/$SYSTEM/$ACTOR" "$ORG" >/dev/null
-jq --arg a "$ACTOR" --arg t "$(jq -r '.identifiers.testCases[0]' build/deploy.json)" '.actor=$a | .testCase=$t' .state.json > .state.tmp && mv .state.tmp .state.json
+ACTORS=$(api GET "/specification/$SPEC/actors" "$COMMUNITY")
+STATEMENTS=$(api GET "/conformance/$SYSTEM" "$ORG")
+for NAME in DocumentSource DocumentConsumer; do
+  KEY=$(echo "$ACTORS" | jq -r --arg n "$NAME" '.[] | select(.identifier==$n) | .apiKey')
+  echo "$STATEMENTS" | jq -e --arg a "$KEY" 'any(.[]; .actor==$a)' >/dev/null || api PUT "/conformance/$SYSTEM/$KEY" "$ORG" >/dev/null
+  jq --arg n "$NAME" --arg k "$KEY" '.actors[$n]=$k' .state.json > .state.tmp && mv .state.tmp .state.json
+done
+jq --slurpfile d build/deploy.json '.testCases=$d[0].identifiers.testCases' .state.json > .state.tmp && mv .state.tmp .state.json
 
 echo
 echo "ITB is ready:      $ITB   (administrator admin@itb; its one-time password is in: docker compose logs gitb-ui)"
 echo "validator:         $MATCHBOX_URL"
-echo "send documents to: http://127.0.0.1:8081/itbsrv/api/http/$SYSTEM/Bundle   (while a test session is waiting)"
+echo "your system calls: http://127.0.0.1:8081/itbsrv/api/http/$SYSTEM/...   (while a test session is waiting)"

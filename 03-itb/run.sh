@@ -8,7 +8,7 @@ ITB=http://127.0.0.1:9000
 s() { jq -r ".$1" .state.json; }
 api() { curl -sS -f -X POST "$ITB/api/rest$1" -H "ITB_API_KEY: $(s organisation)" -H 'Content-Type: application/json' -d "$2"; }
 
-SESSION=$(api /tests/start "{\"system\":\"$(s system)\",\"actor\":\"$(s actor)\",\"testCase\":[\"$(s testCase)\"],\"waitForCompletion\":false}" | jq -r '.createdSessions[0].session')
+SESSION=$(api /tests/start "{\"system\":\"$(s system)\",\"actor\":\"$(s actors.DocumentSource)\",\"testCase\":[\"$(jq -r '.testCases[]|select(test("eps-001"))' .state.json)\"],\"waitForCompletion\":false}" | jq -r '.createdSessions[0].session')
 echo "session $SESSION"
 sleep 2
 echo "POST $FILE  ->  matchbox says:"
@@ -20,3 +20,4 @@ for i in $(seq 1 30); do
   [ "$RESULT" != UNDEFINED ] && break; sleep 1
 done
 echo "ITB result: $RESULT"
+[ "$RESULT" = UNDEFINED ] && api /tests/stop "{\"session\":[\"$SESSION\"]}" >/dev/null || true

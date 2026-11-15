@@ -3,13 +3,13 @@
 Material for the tutorial *FHIR Validation ecosystem and testing approaches* (HL7 Europe Working Group Meeting,
 Tuesday 17 November 2026, 09:00–10:30). One document, the European Patient Summary (EPS), goes through every step.
 
-Status: work in progress. Steps 1 to 3 are tested; the others are planned.
+Status: work in progress. Steps 1 to 4 are tested.
 
 ## Prerequisites
 
 - Java 21
 - Docker with Compose, and 6 GB of memory for the Docker VM
-- `curl` and `jq`
+- `curl`, `jq` and Python 3
 
 ## The document
 
@@ -65,5 +65,31 @@ To watch it in the browser, open <http://127.0.0.1:9000> and log in as `admin@it
 - When the document is valid, the sender gets matchbox's OperationOutcome back. When it is not, the sender gets
   HTTP 500 and the OperationOutcome is in the session's validation step.
 - The first start pulls about 2 GB of images and takes a few minutes.
+
+## 4. ITB as a simulator: your system is the client
+
+The same ITB plays the Document Access Provider of the EU Health Data API. The system under test is a document
+consumer: it finds a patient summary (Find Document References, ITI-67) and retrieves it (Retrieve Document, ITI-68).
+The test bed waits for each request, checks it, and answers.
+
+```bash
+03-itb/consumer.sh              # a correct consumer            -> ITB result: SUCCESS
+03-itb/consumer.sh --no-token   # forgets the Authorization     -> ITB result: FAILURE
+03-itb/consumer.sh --manual     # starts a session and prints the base URL: you are the client
+```
+
+With `--manual`, send the two requests yourself (replace `$BASE` with the printed base URL):
+
+```bash
+curl -H 'Authorization: Bearer tutorial-token' \
+  "$BASE/DocumentReference?patient=eps-pat-1&category=Patient-Summaries"
+curl -H 'Authorization: Bearer tutorial-token' "$BASE/Binary/eps-minimal"
+```
+
+- The test case is `03-itb/suite/eps-002-find-and-retrieve.xml`. It checks the method, the resource, the `patient`
+  parameter, a `category` or `type` parameter, and that a bearer token is sent. It does not check the token itself:
+  the token request of SMART Backend Services is left out to keep the exercise short.
+- ITB waits five minutes per step. Run one session at a time: a request goes to the session that is waiting.
+- The document ITB hands out is `examples/eps-minimal.json`, so the retrieved Bundle can go straight back into step 1 or 2.
 
 Tested with validator 7.0.6, matchbox v4.1.21 and ITB 1.30.2 on 2026-11-15.
