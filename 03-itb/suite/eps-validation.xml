@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns="http://www.gitb.com/tdl/v1/" xmlns:gitb="http://www.gitb.com/core/v1/" id="eps-validation">
+  <metadata>
+    <gitb:name>European Patient Summary: document validation</gitb:name>
+    <gitb:version>1.0</gitb:version>
+    <gitb:description>The system under test sends a European Patient Summary to the test bed. The test bed has matchbox validate it against the EPS Bundle profile.</gitb:description>
+  </metadata>
+  <actors>
+    <gitb:actor id="DocumentSource">
+      <gitb:name>DocumentSource</gitb:name>
+      <gitb:desc>The system that produces the patient summary (system under test).</gitb:desc>
+    </gitb:actor>
+    <gitb:actor id="DocumentReceiver">
+      <gitb:name>DocumentReceiver</gitb:name>
+      <gitb:desc>Played by the test bed.</gitb:desc>
+    </gitb:actor>
+    <gitb:actor id="Validator">
+      <gitb:name>Validator</gitb:name>
+      <gitb:desc>matchbox, at @MATCHBOX_URL@</gitb:desc>
+    </gitb:actor>
+  </actors>
+  <testcase id="eps-001-valid-patient-summary"/>
+</testsuite>

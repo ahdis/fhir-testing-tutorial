@@ -1,0 +1,17 @@
+# matchbox configured as a validation server for the European Patient Summary.
+# The package and its dependencies are downloaded from packages.fhir.org on the first start.
+server:
+  servlet:
+    context-path: /matchboxv3
+hapi:
+  fhir:
+    implementationguides:
+      eps:
+        name: hl7.fhir.eu.eps
+        version: 1.0.0-ballot
+matchbox:
+  fhir:
+    context:
+      fhirVersion: 4.0.1
+      txServer: http://tx.fhir.org
+      onlyOneEngine: false

@@ -1,0 +1,10 @@
+name: fhir-testing-tutorial
+services:
+  matchbox:
+    image: europe-west6-docker.pkg.dev/ahdis-ch/ahdis/matchbox:v4.1.21
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./application.yaml:/config/application.yaml:ro
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx3g

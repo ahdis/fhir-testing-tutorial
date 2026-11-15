@@ -1,0 +1,44 @@
+# The EU Interoperability Test Bed (ITB), next to the matchbox of step 2.
+#   UI        http://127.0.0.1:9000
+#   callback  http://127.0.0.1:8081/itbsrv   (where a system under test calls the test bed)
+name: fhir-testing-tutorial
+include:
+  - ../02-matchbox/docker-compose.yml
+services:
+  gitb-redis:
+    image: isaitb/gitb-redis:1.30.2
+  gitb-mysql:
+    image: isaitb/gitb-mysql:1.30.2
+    volumes:
+      - gitb-dbdata:/var/lib/mysql
+    healthcheck:
+      test: '/usr/bin/mysql --user=root --password=$$MYSQL_ROOT_PASSWORD --execute "SHOW DATABASES;"'
+      interval: 3s
+      timeout: 5s
+      retries: 50
+  gitb-srv:
+    image: isaitb/gitb-srv:1.30.2
+    environment:
+      CALLBACK_ROOT_URL: http://localhost:8081/itbsrv
+    ports:
+      - "127.0.0.1:8081:8080"
+  gitb-ui:
+    image: isaitb/gitb-ui:1.30.2
+    environment:
+      THEME: ec
+      AUTOMATION_API_ENABLED: "true"
+      AUTOMATION_API_MASTER_KEY: ${ITB_AUTOMATION_API_MASTER_KEY:?run ./setup.sh}
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - gitb-repo:/gitb-repository
+    depends_on:
+      gitb-redis:
+        condition: service_started
+      gitb-mysql:
+        condition: service_healthy
+      gitb-srv:
+        condition: service_started
+volumes:
+  gitb-dbdata:
+  gitb-repo:
