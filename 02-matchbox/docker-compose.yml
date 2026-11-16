@@ -1,7 +1,7 @@
 name: fhir-testing-tutorial
 services:
   matchbox:
-    image: europe-west6-docker.pkg.dev/ahdis-ch/ahdis/matchbox:v5.0.0-rc4
+    image: ${MATCHBOX_IMAGE:-europe-west6-docker.pkg.dev/ahdis-ch/ahdis/matchbox:v5.0.0-rc5}
     ports:
       - "127.0.0.1:8080:8080"
     volumes:

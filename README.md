@@ -100,26 +100,50 @@ The [EU Health Data API tests](https://euridice-org.github.io/eu-health-data-api
 67 ITB test cases for the six actors of the EU Health Data API. They are a demonstration, not an approved test
 specification. Here the system under test is a server: a plain HAPI FHIR server with the tests' 27 fixture resources.
 
+The test cases use a validator for three things: to load the implementation guide, to validate resources against
+its profiles, and to evaluate the FHIRPath expressions of nearly every check. As published they use the
+HL7 validator. Here matchbox does it (three GITB REST services, complete since 5.0.0-rc5).
+
 ```bash
 (cd 03-itb && docker compose --env-file .env stop)   # free memory and ports: this step brings its own ITB
-04-eu-health-data-api/setup.sh                       # clones the tests, starts HAPI, loads the fixtures, starts ITB
+04-eu-health-data-api/setup.sh                       # clones the tests, starts HAPI, loads the fixtures, starts ITB and matchbox
 04-eu-health-data-api/run.sh                         # SUCCESS dap-001, FAILURE dap-002
 ```
 
 `setup.sh` prints the address (<http://127.0.0.1:9001>), the login, and the ids the test cases ask for.
 In the browser, choose the system *Implementation under test*, the actor *DocumentAccessProvider*, and run a case.
+The list shows ten cases per page.
 
 - `dap-001` passes: HAPI declares `DocumentReference` and `Binary`. `dap-002` fails: HAPI does not declare
   SMART on FHIR security. That is the point of the exercise: a general FHIR server is not yet a Document Access
   Provider of the EU Health Data API.
-- The search cases ask for a patient id and an access token. HAPI accepts any token, and the authorization cases
-  report that.
+- `dap-012` shows all three services of matchbox: it loads the implementation guide, reads the patient from HAPI,
+  validates it against the EU Core Patient profile and counts the errors with FHIRPath. It asks for an access token
+  (`Bearer anything`) and the patient id that `setup.sh` printed.
+- HAPI accepts any token, and the authorization cases report that.
+- `04-eu-health-data-api/setup.sh --hl7-validator` runs the tests as published, with the HL7 validator.
 - Needs Node.js 22 or newer, and about 6 GB of memory for Docker. The first start takes several minutes.
-- Until [eu-health-data-api-test#1](https://github.com/euridice-org/eu-health-data-api-test/pull/1) is merged,
-  `setup.sh` clones the branch with the fix for the validator download.
 
-Tested on 2026-11-15: `setup.sh` from a fresh clone, and the cases `dap-001`, `dap-002` and `dap-014` from the command
-line. The cases that need operator input were not run.
+What `setup.sh` changes in the tests so that matchbox can take the validator's place:
+
+- the validator's address in the feature files (`http://matchbox:8080/matchboxv3`);
+- where the test steps read the validation report. They read it by position, and matchbox returns the report's
+  context as an object with an `item` list, with one more item before the OperationOutcome
+  (`/report/context/4/value` becomes `/report/context/item/5/value`).
+
+Until [eu-health-data-api-test#1](https://github.com/euridice-org/eu-health-data-api-test/pull/1) is merged,
+`setup.sh` clones the branch with the fix for the download of the HL7 validator (only `--hl7-validator` needs it).
+
+Tested on 2026-11-16:
+
+- With matchbox v5.0.0-rc5: `setup.sh`, then `dap-001`, `dap-002` and `dap-014` from the command line, and `dap-012`
+  in the browser.
+- With matchbox built from the change that added the two services
+  ([matchbox#682](https://github.com/ahdis/matchbox/pull/682), part of rc5): the 48 cases of the three server actors
+  (`dap`, `rap`, `grp`) give the same result with matchbox and with the HL7 validator, step by step: 37 pass,
+  11 fail. For that comparison the steps that ask for a token or an id were removed and the values given through
+  ITB's REST API.
+- Not run: the 19 cases of the client actors, and the cases that need a person.
 
 ## Backup
 
@@ -130,4 +154,4 @@ Recordings and screenshots of every step are in [backup/](backup/README.md), in 
 Apache License 2.0, see [LICENSE](LICENSE). The example documents are derived from an example of the HL7 Europe
 European Patient Summary implementation guide.
 
-Tested with validator 7.0.6, matchbox v5.0.0-rc4 (a release candidate) and ITB 1.30.2 on 2026-11-15.
+Tested with validator 7.0.6, matchbox v5.0.0-rc5 (a release candidate) and ITB 1.30.2 on 2026-11-16.

@@ -1,0 +1,14 @@
+# Added to the compose file of the EU Health Data API tests by setup.sh: matchbox takes the place of the
+# HL7 validator container. Paths are relative to the tests' directory (eu-health-data-api-test).
+services:
+  fhir-validator:
+    profiles: [hl7-validator]      # not started
+  matchbox:
+    image: ${MATCHBOX_IMAGE:-europe-west6-docker.pkg.dev/ahdis-ch/ahdis/matchbox:v5.0.0-rc5}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8083:8080"
+    volumes:
+      - ../application-matchbox.yaml:/config/application.yaml:ro
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx3g

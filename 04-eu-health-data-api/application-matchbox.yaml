@@ -1,0 +1,12 @@
+# matchbox as the validator of the EU Health Data API tests. No implementation guide is configured:
+# setup.sh (and each test case) asks matchbox to load hl7.fhir.eu.health-data-api#1.0.0-ballot,
+# and matchbox installs it with its dependencies from packages.fhir.org.
+server:
+  servlet:
+    context-path: /matchboxv3
+matchbox:
+  fhir:
+    context:
+      fhirVersion: 4.0.1
+      txServer: http://tx.fhir.org
+      onlyOneEngine: false
