@@ -12,6 +12,8 @@ Everything was recorded on 2026-11-15 from the scripts of this repository, with 
 | 5. EU Health Data API tests, server under test | [05-eu-health-data-api.mp4](05-eu-health-data-api.mp4) | [screenshot](05-eu-health-data-api.png) | [`dap-012` in ITB, with matchbox as the validator](05-eu-health-data-api-matchbox.png) |
 | Demo: Maestro runs matchbox and ITB in one test | [06-maestro.mp4](06-maestro.mp4) | [screenshot](06-maestro.png) | [the session Maestro started, in ITB](06-maestro-itb-session.png) |
 
+Slide 7 of the deck shows the home page of the [EHDS Gazelle test bed](https://ehds.gazelle-platform.net/gazelle/home): [screenshot](00-ehds-gazelle-home.png), taken on 2026-11-16.
+
 The recordings cut the waiting: the validator's package loading and the start of the containers are not shown.
 Since the recording, the tutorial uses matchbox v5.0.0-rc5, and in step 5 matchbox is the validator of the test cases;
 recording 5 shows the HL7 validator in that place, with the same results. The screenshot of `dap-012` was taken on 2026-11-16.
