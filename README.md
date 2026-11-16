@@ -145,6 +145,59 @@ Tested on 2026-11-16:
   ITB's REST API.
 - Not run: the 19 cases of the client actors, and the cases that need a person.
 
+## Demo: Gazelle Maestro runs matchbox and ITB in one test
+
+Steps 1 to 5 use one engine at a time. [Maestro](https://gitlab.inria.fr/gazelle/public/core/maestro), the test
+engine of Gazelle, can chain engines: one test run, one report. This is a demonstration by the presenter, not a
+hands-on step, because Maestro has to be built from source (see below). It runs on top of step 5.
+
+The test has two steps:
+
+1. **`VALIDATION`**: Maestro sends the patient summary to matchbox, through the Gazelle Validation Service API
+   (`/matchboxv3/gazelle`), with the EPS Bundle profile.
+2. **`ITB`**: Maestro starts the test case `dap-001` of step 5 in ITB through ITB's REST API, waits for it, and
+   takes over ITB's verdict and report.
+
+```json
+{ "id": "validate", "type": "VALIDATION", "properties": [
+    { "name": "validationService", "type": "STRING", "value": "Matchbox" },
+    { "name": "validationProfile", "type": "STRING", "value": "http://hl7.eu/fhir/eps/StructureDefinition/bundle-eu-eps|1.0.0-ballot" },
+    { "name": "contentToValidate", "type": "BYTE_ARRAY", "fileName": "eps-minimal.json", "value": "…base64…" } ] },
+{ "id": "itb", "type": "ITB", "timeout": 120000, "properties": [
+    { "name": "testCase", "type": "STRING", "value": "dap-001-the-capabilitystatement-declares-documentreference-and-binary" },
+    { "name": "actorID", "type": "STRING", "value": "…API key of the actor…" },
+    { "name": "systemID", "type": "STRING", "value": "…API key of the system…" },
+    { "name": "executionMode", "type": "STRING", "value": "SYNC" } ] }
+```
+
+```
+Maestro test run: PASSED
+  PASSED    matchbox: valid patient summary
+  PASSED    ITB: dap-001 against the server
+              ITB SUCCESS  Step 1: GET /metadata
+              ITB SUCCESS  Step 2: Response status is 200
+              ITB SUCCESS  Step 3: Evaluate FHIRPath
+              …
+```
+
+- With `examples/eps-broken.json` the run is `FAILED` after the first step, and Maestro does not start ITB:
+  a step only runs if the one before it passed.
+- With `dap-002` in the second step the document is valid and the run is `FAILED` at the ITB step, for the reason
+  of step 5: HAPI does not declare SMART on FHIR security.
+
+What it needs beyond step 5:
+
+- Maestro 1.3.1 built from source, with one change: it reads ITB's verdict by name
+  ([ahdis/maestro#1](https://github.com/ahdis/maestro/issues/1)). Without the change an ITB step reports
+  `UNDEFINED` with a live ITB.
+- Gazelle's service registry, which tells Maestro where matchbox (`Validation Service API`) and ITB (the name
+  `ITB`, interface `ITB API`) are, and a token endpoint for Maestro's lookups.
+- The organisation's API key of ITB as Maestro's `itb.api.key`, and the EPS package in the matchbox of step 5
+  (loaded through `/itb/igManager/process`).
+
+Tested on 2026-11-16 with Maestro 1.3.1 (with the change), ITB 1.30.2, matchbox v5.0.0-rc5 and HAPI FHIR 8.6.0:
+the three runs give `PASSED`, `FAILED` at step 1 and `FAILED` at step 2.
+
 ## Backup
 
 Recordings and screenshots of every step are in [backup/](backup/README.md), in case a step does not run on your laptop.
