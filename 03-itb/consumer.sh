@@ -14,7 +14,9 @@ BASE="http://127.0.0.1:8081/itbsrv/api/http/$(s system)"
 SESSION=$(api /tests/start "{\"system\":\"$(s system)\",\"actor\":\"$(s actors.DocumentConsumer)\",\"testCase\":[\"eps-002-find-and-retrieve\"],\"waitForCompletion\":false}" | jq -r '.createdSessions[0].session')
 echo "session  $SESSION"
 echo "base URL $BASE"
-[ "$MODE" = --manual ] && { echo "ITB waits five minutes per step. Send the two requests, then look at the session in the ITB UI."
+[ "$MODE" = --manual ] && { echo; echo "  export BASE=$BASE"; echo
+  echo "Paste the export line above into your shell, then send the two requests (see README)."
+  echo "ITB waits five minutes per step. Afterwards look at the session in the ITB UI."
   echo "Run one session at a time: requests go to the oldest session that is waiting."; exit 0; }
 AUTH=(-H 'Authorization: Bearer tutorial-token'); [ "$MODE" = --no-token ] && AUTH=()
 sleep 2

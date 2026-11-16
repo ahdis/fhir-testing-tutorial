@@ -80,13 +80,16 @@ The test bed waits for each request, checks it, and answers.
 03-itb/consumer.sh --manual     # starts a session and prints the base URL: you are the client
 ```
 
-With `--manual`, send the two requests yourself (replace `$BASE` with the printed base URL):
+With `--manual`, paste the `export BASE=...` line it prints into your shell, then send the two requests yourself:
 
 ```bash
-curl -H 'Authorization: Bearer tutorial-token' \
+export BASE=http://127.0.0.1:8081/itbsrv/api/http/<system>   # the line printed by --manual
+curl -H 'Authorization: Bearer tutorial-token' -H 'Accept: application/fhir+json' \
   "$BASE/DocumentReference?patient=eps-pat-1&category=Patient-Summaries"
-curl -H 'Authorization: Bearer tutorial-token' "$BASE/Binary/eps-minimal"
+curl -H 'Authorization: Bearer tutorial-token' -H 'Accept: application/fhir+json' "$BASE/Binary/eps-minimal"
 ```
+
+ITB answers HTTP 500 to a request without `Accept: application/fhir+json`.
 
 - The test case is `03-itb/suite/eps-002-find-and-retrieve.xml`. It checks the method, the resource, the `patient`
   parameter, a `category` or `type` parameter, and that a bearer token is sent. It does not check the token itself:
